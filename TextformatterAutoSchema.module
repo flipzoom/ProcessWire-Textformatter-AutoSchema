@@ -86,7 +86,7 @@ class TextformatterAutoSchema extends Textformatter implements ConfigurableModul
             // The module'ss title, typically a little more descriptive than the 
             // class name
             // ------------------------------------------------------------------------
-            'title' => 'AutoSchema - Auto detect Schema.org-Properties', 
+            'title' => 'AutoSchema - Auto detect of Schema.org-Attributes', 
 
             // ------------------------------------------------------------------------
             // Version: major, minor, revision, i.e. 100 = 1.1.0
