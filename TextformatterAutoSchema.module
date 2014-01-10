@@ -1,0 +1,214 @@
+<?php
+
+/**
+ * @author  FlipZoom Media Inc. - David Karich
+ * @contact David Karich <david.karich@flipzoom.de>
+ * @website www.flipzoom.de
+ * @create  201401-10
+ * @style   Tab size: 4 / Soft tabs: YES
+ * ----------------------------------------------------------------------------------
+ * @licence
+ * Copyright (c) 2013 FlipZoom Media Inc. - David Karich
+ * Permission is hereby granted, free of charge, to any person obtaining a copy 
+ * of this software and associated documentation files (the "Software"), to deal 
+ * in the Software without restriction, including without limitation the rights 
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+ * copies of the Software, and to permit persons to whom the Software is furnished 
+ * to do so, subject to the following conditions: The above copyright notice and 
+ * this permission notice shall be included in all copies or substantial portions 
+ * of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * ----------------------------------------------------------------------------------
+ */
+
+class TextformatterAutoSchema extends Textformatter implements ConfigurableModule {
+    
+    // ------------------------------------------------------------------------
+    // Init global configuration variables.
+    // ------------------------------------------------------------------------
+    protected $data = array(
+
+        // ------------------------------------------------------------------------
+        // Convert img-Tag to HTML5 figure-Tag?
+        // ------------------------------------------------------------------------
+        'HTML5ImageFigure' => 1,
+    );
+
+    /**
+     * ------------------------------------------------------------------------
+     * Configure the input fields for the backend.
+     * ------------------------------------------------------------------------
+     * @param  array  $data Module data from the database.
+     */
+    public static function getModuleConfigInputfields(array $data) {
+        
+        // ------------------------------------------------------------------------
+        // Initialize InputField wrapper
+        // ------------------------------------------------------------------------
+        $fields             = new InputfieldWrapper();
+
+        // ------------------------------------------------------------------------
+        // Define checkbox field to enable or disable the HTML5 figure tag conversation.
+        // ------------------------------------------------------------------------
+        $field              = wire('modules')->get('InputfieldCheckbox');
+        $field->name        = 'HTML5ImageFigure';
+        $field->label       = 'Convert Image to HTML5 figure';
+        $field->columnWidth = 100;
+        $field->value       = (isset($data['HTML5ImageFigure'])) ? $data['HTML5ImageFigure'] : 1;
+        $field->checked     = ($field->value == 1) ? 'checked' : '';
+        $field->description = 'Images are automatically changed to a figure-Tag and the alt-Atttribut used as caption.';
+        $fields->add($field); 
+
+        // ------------------------------------------------------------------------
+        // Return of the fields.
+        // ------------------------------------------------------------------------
+        return $fields;
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * getModuleInfo is a module required by all modules to tell 
+     * ProcessWire about them
+     * ------------------------------------------------------------------------
+     * @return array
+     */
+    public static function getModuleInfo() {
+
+        return array(
+
+            // ------------------------------------------------------------------------
+            // The module'ss title, typically a little more descriptive than the 
+            // class name
+            // ------------------------------------------------------------------------
+            'title' => 'AutoSchema - Auto detect Schema.org-Properties', 
+
+            // ------------------------------------------------------------------------
+            // Version: major, minor, revision, i.e. 100 = 1.1.0
+            // ------------------------------------------------------------------------
+            'version' => 100, 
+
+            // ------------------------------------------------------------------------
+            // Summary is brief description of what this module is
+            // ------------------------------------------------------------------------
+            'summary' => 'AutoSchema automatically sets the basic properties of the micro data of Schema.org. For example, for headings, images and links. Images are automatically changed to a figure tag and the alt Atttribut used as caption.',
+            
+            // ------------------------------------------------------------------------
+            // Optional URL to more information about the module
+            // ------------------------------------------------------------------------
+            'href' => 'https://github.com/FlipZoomMedia/ProcessWire-Textformatter-AutoSchema',
+
+            // ------------------------------------------------------------------------
+            // singular=true: indicates that only one instance of the module is allowed.
+            // This is usually what you want for modules that attach hooks.
+            // ------------------------------------------------------------------------
+            'singular' => true, 
+
+            // ------------------------------------------------------------------------
+            // autoload=true: indicates the module should be started with ProcessWire.
+            // This is necessary for any modules that attach runtime hooks, otherwise those
+            // hooks won't get attached unless some other code calls the module on it's own.
+            // Note that autoload modules are almost always also 'singular' (seen above).
+            // ------------------------------------------------------------------------
+            'autoload' => false, 
+        );
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Searches for tags and adds the right attribute.
+     * ------------------------------------------------------------------------
+     * @param  string $string
+     * @return string $string
+     */
+    public function format(&$string) {
+
+        // ------------------------------------------------------------------------
+        // H1 headlines
+        // ------------------------------------------------------------------------
+        $string = preg_replace('/<h1(.*)>/Uis', '<h1$1 itemprop="headline">', $string);
+
+        // ------------------------------------------------------------------------
+        // H2, H3, H4, H5, H6 headlines
+        // ------------------------------------------------------------------------
+        $string = preg_replace('/<h([2|3|4|5|6]{1})(.*)>/Uis', '<h$1$2 itemprop="alternativeHeadline">', $string);
+
+        // ------------------------------------------------------------------------
+        // Paragraphs
+        // ------------------------------------------------------------------------
+        $string = preg_replace('/<p(.*)>/Uis', '<p$1 itemprop="text">', $string);
+
+        // ------------------------------------------------------------------------
+        // Links
+        // ------------------------------------------------------------------------
+        $string = preg_replace('/<a(.*)>/Uis', '<a$1 itemprop="url">', $string);
+
+        // ------------------------------------------------------------------------
+        // Images
+        // ------------------------------------------------------------------------
+        $string = ($this->data['HTML5ImageFigure'] == 1) ? preg_replace_callback('/<img(.*)\/>/Uis', 'self::ImgToFigure', $string) : preg_replace('/<img(.*)\/>/Uis', '<img$1 itemprop="image" />', $string);
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Change an image tag to a figure tag with caption.
+     * ------------------------------------------------------------------------
+     * @param  array $match Pregmatch-Array of the image
+     * @return string       The constructed string
+     */
+    private static function ImgToFigure($match) {
+
+        // ------------------------------------------------------------------------
+        // Generate the Caption tag
+        // ------------------------------------------------------------------------
+        preg_match('/alt=(["|\']+)(.*)(["|\']+)/Uis', $match[1], $caption);
+        $caption_string = (empty($caption[2])) ? '' : '<figcaption itemprop="caption">'.$caption[2].'</figcaption>';
+
+        // ------------------------------------------------------------------------
+        // Meta tag and css for image with
+        // ------------------------------------------------------------------------
+        preg_match('/width=(["|\']+)(.*)(["|\']+)/Uis', $match[1], $width);
+        $width_string   = (empty($width[2])) ? '' : '<meta itemprop="width" content="'.$width[2].'">';
+        $width_figure   = (substr($width[2], -1) == '%') ? 'width:'.$width[2].';' : 'width:'.$width[2].'px;';
+
+        // ------------------------------------------------------------------------
+        // Meta tag and css for image height
+        // ------------------------------------------------------------------------
+        preg_match('/height=(["|\']+)(.*)(["|\']+)/Uis', $match[1], $height);
+        $height_string  = (empty($height[2])) ? '' : '<meta itemprop="height" content="'.$height[2].'">';
+
+        // ------------------------------------------------------------------------
+        // Construct meta tag
+        // ------------------------------------------------------------------------
+        $meta_string    = $width_string.$height_string;
+
+        // ------------------------------------------------------------------------
+        // Add CSS floating to figure tag if available.
+        // ------------------------------------------------------------------------
+        preg_match('/float:\s*(left|right+)/Uis', $match[1], $float);
+        $float_figure   = (empty($float[1])) ? '' : 'float:'.$float[1].';';
+
+        // ------------------------------------------------------------------------
+        // Construct the complete figure-Tag.
+        // ------------------------------------------------------------------------
+        return '<figure itemscope itemtype="http://schema.org/ImageObject"'.$float_string.' style="'.$width_figure.$float_figure.'">
+                    <img '.trim($match[1]).' itemprop="image" />'.$caption_string.$meta_string.'
+                </figure>';
+    }
+
+    /**
+     * ------------------------------------------------------------------------
+     * Abstract function required for configuration
+     * ------------------------------------------------------------------------
+     */
+    public function __set($key, $value) {
+        $this->data[$key] = $value; 
+    }
+}
+
+?>
