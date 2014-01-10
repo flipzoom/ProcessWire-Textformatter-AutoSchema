@@ -196,7 +196,7 @@ class TextformatterAutoSchema extends Textformatter implements ConfigurableModul
         // ------------------------------------------------------------------------
         // Construct the complete figure-Tag.
         // ------------------------------------------------------------------------
-        return '<figure itemscope itemtype="http://schema.org/ImageObject"'.$float_string.' style="'.$width_figure.$float_figure.'">
+        return '<figure itemscope itemtype="http://schema.org/ImageObject" style="'.$width_figure.$float_figure.'">
                     <img '.trim($match[1]).' itemprop="image" />'.$caption_string.$meta_string.'
                 </figure>';
     }
