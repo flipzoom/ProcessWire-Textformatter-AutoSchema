@@ -3,7 +3,7 @@
 ####Automatic Schema.org Micro Data for basic elements####
 -----------------------------
 
-AutoSchema module automatically sets the basic micro data attributes of Schema.org. For example, for headings, paragraphs, images and links. Images are automatically changed to a HTML5 figure tag and the image alt atttribut used as caption. This option can be disabled via the backend.
+AutoSchema module automatically sets the basic micro data attributes of Schema.org. For example, for headings, paragraphs, images and links. Images are automatically changed to a HTML5 figure tag and the image alt attribut used as caption. This option can be disabled via the backend.
 
 ##Installation##
 
